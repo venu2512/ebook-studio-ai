@@ -315,6 +315,28 @@ CI (`.github/workflows/ci.yml`) runs the backend checks, the frontend
 lint/typecheck/build, and a Docker build of the API image on every push and pull
 request.
 
+### Live end-to-end smoke test (`apps/api`)
+
+The pytest suite drives the ASGI app in-process. To exercise a *real* `uvicorn`
+server (a deployment, or a local SQLite run) use the live smoke script. It
+registers a throwaway user and runs the whole vertical slice over HTTP — create
+book → outline → approve → full book → export download → marketing kit and cover
+→ credit accounting — asserting exactly two generation charges.
+
+```bash
+# Terminal 1: SQLite + mock LLM + inline jobs (no Postgres/Redis needed)
+export DATABASE_URL="sqlite+aiosqlite:///./smoke.db"
+export LLM_PROVIDER="mock"
+export JOB_EXECUTION_MODE="inline"
+export STORAGE_BACKEND="local"
+uv run alembic upgrade head
+uv run python -m app.scripts.seed
+uv run uvicorn app.main:app --port 8000
+
+# Terminal 2 (from apps/api)
+uv run python -m app.scripts.smoke_live
+```
+
 ---
 
 ## Troubleshooting
