@@ -1,0 +1,45 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.db
+*.sqlite3
+
+# --- Node / Next.js ---
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+
+# --- Env & secrets ---
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# --- Local infra data ---
+infra/data/
+infra/minio-data/
+infra/postgres-data/
+
+# --- Build artifacts ---
+storage/
+exports_out/
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
