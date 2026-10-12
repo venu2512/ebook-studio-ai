@@ -6,6 +6,10 @@
 # =============================================================================
 FROM node:22-alpine AS runner
 
+# Corepack pins the package manager from `packageManager` in package.json
+# (pnpm 10.33.3). Disable its interactive download prompt for non-TTY builds.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
 RUN corepack enable && apk add --no-cache libc6-compat curl
 
 WORKDIR /app

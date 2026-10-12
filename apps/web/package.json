@@ -2,6 +2,7 @@
   "name": "@ebook/web",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.33.3",
   "description": "eBook Studio AI web application (Next.js 15)",
   "scripts": {
     "dev": "next dev",

@@ -155,7 +155,7 @@ book — delivered as **PDF, EPUB and DOCX** with a cover and a full marketing k
 
 - **Docker + Docker Compose** for the one-command stack, **or**
   - **Python 3.12** and [uv](https://docs.astral.sh/uv/)
-  - **Node.js 22+** and **pnpm 9+**
+  - **Node.js 22+** and **pnpm 10** (pinned via `packageManager`; Corepack will fetch it)
   - (optional) PostgreSQL 16 and Redis 7 for a fully local non-Docker run
 
 ---
@@ -215,6 +215,16 @@ pnpm install
 echo "NEXT_PUBLIC_API_BASE_URL=http://localhost:8000" > .env.local
 pnpm dev        # http://localhost:3000
 ```
+
+### One-click launcher (Windows)
+
+Double-click **`start.bat`** in the repository root (or run it from a terminal).
+It syncs the API environment, seeds the SQLite database, launches the API and
+web app in their own windows, waits until both are up, and opens
+<http://localhost:3000> in your browser.
+
+It runs fully offline with SQLite + the mock LLM (no Docker, no API keys).
+Close the **eBook Studio API** and **eBook Studio Web** windows to stop it.
 
 ---
 
