@@ -12,6 +12,10 @@
 *.yml  text eol=lf
 *.yaml text eol=lf
 *.md   text eol=lf
+
+# Windows batch files must check out with CRLF (cmd.exe needs it for labels).
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
 Dockerfile text eol=lf
 
 # Binary assets.
