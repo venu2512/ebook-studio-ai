@@ -1,0 +1,23 @@
+# Build context = repository root (used by apps/web/Dockerfile)
+.git
+.github
+**/node_modules
+**/.next
+**/out
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+**/__pycache__
+**/.venv
+**/venv
+**/*.db
+**/*.sqlite3
+**/storage
+**/exports_out
+infra/data
+infra/minio-data
+infra/postgres-data
+.env
+.env.local
+.env.*.local
+*.log

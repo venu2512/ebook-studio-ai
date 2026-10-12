@@ -1,0 +1,31 @@
+/**
+ * TanStack Query key factory. Centralising keys keeps invalidation precise.
+ */
+export const queryKeys = {
+  me: ["me"] as const,
+  credits: ["credits"] as const,
+  transactions: (limit = 20) => ["credits", "transactions", limit] as const,
+  books: (params: Record<string, unknown> = {}) => ["books", params] as const,
+  book: (bookId: string) => ["book", bookId] as const,
+  costEstimate: (bookId: string) => ["book", bookId, "cost-estimate"] as const,
+  bible: (bookId: string) => ["book", bookId, "bible"] as const,
+  outline: (bookId: string) => ["book", bookId, "outline"] as const,
+  chapters: (bookId: string) => ["book", bookId, "chapters"] as const,
+  chapter: (chapterId: string) => ["chapter", chapterId] as const,
+  versions: (chapterId: string) => ["chapter", chapterId, "versions"] as const,
+  job: (jobId: string) => ["job", jobId] as const,
+  pipeline: (jobId: string) => ["job", jobId, "pipeline"] as const,
+  bookJobs: (bookId: string) => ["book", bookId, "jobs"] as const,
+  exports: (bookId: string) => ["book", bookId, "exports"] as const,
+  templates: (kind?: string) => ["templates", kind ?? "all"] as const,
+  cover: (bookId: string) => ["book", bookId, "cover"] as const,
+  assets: (bookId: string) => ["book", bookId, "assets"] as const,
+  marketing: (bookId: string) => ["book", bookId, "marketing"] as const,
+  plans: ["billing", "plans"] as const,
+  creditPacks: ["billing", "packs"] as const,
+  billingSummary: ["billing", "summary"] as const,
+  adminUsage: ["admin", "usage"] as const,
+  adminAgentCosts: ["admin", "agent-costs"] as const,
+  adminUsers: (params: Record<string, unknown> = {}) => ["admin", "users", params] as const,
+  adminJobs: (params: Record<string, unknown> = {}) => ["admin", "jobs", params] as const,
+};

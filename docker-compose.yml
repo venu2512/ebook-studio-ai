@@ -76,7 +76,10 @@ services:
       context: ./apps/api
       dockerfile: Dockerfile
     restart: unless-stopped
-    env_file: [.env]
+    # `.env` is optional: copy .env.example to .env to override defaults.
+    env_file:
+      - path: .env
+        required: false
     environment:
       # Override hostnames for the in-network services.
       DATABASE_URL: postgresql+asyncpg://ebook:ebook@postgres:5432/ebook_studio
@@ -108,7 +111,9 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     command: ["arq", "app.workers.arq_worker.WorkerSettings"]
-    env_file: [.env]
+    env_file:
+      - path: .env
+        required: false
     environment:
       DATABASE_URL: postgresql+asyncpg://ebook:ebook@postgres:5432/ebook_studio
       REDIS_URL: redis://redis:6379/0
@@ -125,10 +130,14 @@ services:
 
   web:
     build:
-      context: ./apps/web
-      dockerfile: Dockerfile
+      # Repo root, because the app depends on the packages/shared workspace.
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
     restart: unless-stopped
     environment:
+      # Baked into the client bundle at build time.
       NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
       # Server-side calls inside the compose network use the service name.
       INTERNAL_API_BASE_URL: http://api:8000
