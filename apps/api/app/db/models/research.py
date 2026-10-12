@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy import Float, ForeignKey, Index, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base, JSONType, TimestampMixin, UUIDMixin
+from app.db.base import Base, TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from app.db.models.book import Book
@@ -28,7 +28,10 @@ class ResearchNote(UUIDMixin, TimestampMixin, Base):
     confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0.5)
     is_verified: Mapped[bool] = mapped_column(default=False, nullable=False)
     used_in_chapter_id: Mapped[uuid.UUID | None] = mapped_column(
-        Uuid(as_uuid=True), ForeignKey("chapters.id", ondelete="SET NULL"), nullable=True, index=True
+        Uuid(as_uuid=True),
+        ForeignKey("chapters.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     tags: Mapped[list[str]] = mapped_column(default=list, nullable=False)
     extra: Mapped[dict[str, Any]] = mapped_column(default=dict, nullable=False)

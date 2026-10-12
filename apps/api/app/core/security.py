@@ -86,7 +86,9 @@ def create_access_token(user_id: uuid.UUID | str, *, extra: dict[str, Any] | Non
 
 def create_refresh_token(user_id: uuid.UUID | str) -> str:
     settings = get_settings()
-    return _create_token(str(user_id), "refresh", timedelta(days=settings.refresh_token_expire_days))
+    return _create_token(
+        str(user_id), "refresh", timedelta(days=settings.refresh_token_expire_days)
+    )
 
 
 def create_purpose_token(user_id: uuid.UUID | str, purpose: TokenType, minutes: int = 60) -> str:

@@ -115,4 +115,4 @@ def _validate_document(document: Any) -> dict[str, object]:
     }
 
 
-__all__ = ["PublisherAgent", "BookExporter"]
+__all__ = ["BookExporter", "PublisherAgent"]

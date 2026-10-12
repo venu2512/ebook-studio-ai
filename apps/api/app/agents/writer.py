@@ -29,17 +29,14 @@ class WriterAgent(BaseAgent):
             "key_points": kwargs.get("key_points") or [],
         }
 
-    def quality_issues(
-        self, ctx: AgentContext, output: BaseModel, **kwargs: Any
-    ) -> list[str]:
+    def quality_issues(self, ctx: AgentContext, output: BaseModel, **kwargs: Any) -> list[str]:
         assert isinstance(output, ChapterDraft)
         issues: list[str] = []
         words = len(output.markdown.split())
         target = int(kwargs.get("target_word_count") or 0)
         if target and abs(words - target) / max(target, 1) > 0.15:
             issues.append(
-                f"Chapter is {words:,} words vs a {target:,}-word budget "
-                "(-/+15% allowed)."
+                f"Chapter is {words:,} words vs a {target:,}-word budget (-/+15% allowed)."
             )
         if not output.markdown.strip():
             issues.append("Chapter markdown is empty.")
@@ -47,6 +44,8 @@ class WriterAgent(BaseAgent):
             issues.append("Chapter has no headings.")
         # Guard against fabricated citations in the raw draft.
         lowered = output.markdown.lower()
-        if any(p in lowered for p in ("according to a study", "research shows that", "studies show")):
+        if any(
+            p in lowered for p in ("according to a study", "research shows that", "studies show")
+        ):
             issues.append("Draft contains attribution-style claims that need verification.")
         return issues

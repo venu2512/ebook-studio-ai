@@ -135,7 +135,7 @@ def register_exception_handlers(app: FastAPI) -> None:
                 "error": {
                     "code": "validation_error",
                     "message": "The request payload is invalid.",
-                    "details": {"errors": _jsonable_errors(exc.errors())},
+                    "details": {"errors": _jsonable_errors(list(exc.errors()))},
                 }
             },
         )

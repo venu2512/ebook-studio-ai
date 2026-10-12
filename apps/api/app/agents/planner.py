@@ -31,7 +31,7 @@ class PlannerAgent(BaseAgent):
         total = output.total_word_budget or sum(
             c.word_budget for p in output.structure.parts for c in p.chapters
         )
-        target = ctx.target_word_count or 1
+        target = int(kwargs.get("target_word_count") or ctx.target_word_count or 1)
         drift = abs(total - target) / target
         if drift > 0.10:
             issues.append(

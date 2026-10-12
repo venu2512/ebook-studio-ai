@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base, JSONType, SoftDeleteMixin, TimestampMixin, UUIDMixin
+from app.db.base import Base, SoftDeleteMixin, TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from app.db.models.asset import Asset
@@ -77,11 +77,15 @@ class Book(UUIDMixin, TimestampMixin, SoftDeleteMixin, Base):
     assets: Mapped[list[Asset]] = relationship(
         back_populates="book", cascade="all, delete-orphan", foreign_keys="Asset.book_id"
     )
-    exports: Mapped[list[Export]] = relationship(back_populates="book", cascade="all, delete-orphan")
+    exports: Mapped[list[Export]] = relationship(
+        back_populates="book", cascade="all, delete-orphan"
+    )
     marketing_kit: Mapped[MarketingKit | None] = relationship(
         back_populates="book", uselist=False, cascade="all, delete-orphan"
     )
-    cover_asset: Mapped[Asset | None] = relationship(foreign_keys=[cover_asset_id], post_update=True)
+    cover_asset: Mapped[Asset | None] = relationship(
+        foreign_keys=[cover_asset_id], post_update=True
+    )
 
     __table_args__ = (
         Index("ix_books_user_status", "user_id", "status"),

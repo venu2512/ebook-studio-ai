@@ -14,9 +14,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, ClassVar
 
-from sqlalchemy import DateTime, JSON, Uuid, func
+from sqlalchemy import JSON, DateTime, Uuid, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -31,7 +31,7 @@ def utcnow() -> datetime:
 class Base(DeclarativeBase):
     """Declarative base for all ORM models."""
 
-    type_annotation_map = {
+    type_annotation_map: ClassVar[dict[Any, Any]] = {
         dict[str, Any]: JSONType,
         list[str]: JSONType,
         list[dict[str, Any]]: JSONType,

@@ -65,6 +65,15 @@ class AgentContext:
     is_sensitive: bool = False
     extra: dict[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        # A sensitive category implies a sensitive book, even when a caller
+        # forgets to set the flag explicitly. Explicit ``True`` always wins.
+        if not self.is_sensitive:
+            from app.db.models.enums import SENSITIVE_CATEGORIES
+
+            category = (self.category or "").strip().lower()
+            self.is_sensitive = category in SENSITIVE_CATEGORIES
+
     def context_values(self) -> dict[str, Any]:
         return {
             "title": self.title,
@@ -150,7 +159,9 @@ class BaseAgent:
     async def run(self, ctx: AgentContext, **kwargs: Any) -> AgentResult:
         settings = get_settings()
         model = settings.model_for_agent(self.name)
-        prompt = load_prompt(self.prompt_name).format_map(_SafeDict(self.build_context_values(ctx, **kwargs)))
+        prompt = load_prompt(self.prompt_name).format_map(
+            _SafeDict(self.build_context_values(ctx, **kwargs))
+        )
         messages = [
             LLMMessage(role="system", content=SYSTEM_PREAMBLE),
             LLMMessage(role="user", content=prompt),
@@ -180,5 +191,5 @@ class BaseAgent:
 class _SafeDict(dict):
     """``str.format_map`` helper: unknown keys render as their own name."""
 
-    def __missing__(self, key: str) -> str:  # noqa: D105
+    def __missing__(self, key: str) -> str:
         return "{" + key + "}"

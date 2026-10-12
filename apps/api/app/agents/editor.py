@@ -24,7 +24,10 @@ class EditorAgent(BaseAgent):
         return values
 
     def mock_payload(self, ctx: AgentContext, **kwargs: Any) -> dict[str, Any]:
-        return {"markdown": kwargs.get("markdown", ""), "chapter_title": kwargs.get("chapter_title", "Chapter")}
+        return {
+            "markdown": kwargs.get("markdown", ""),
+            "chapter_title": kwargs.get("chapter_title", "Chapter"),
+        }
 
     def quality_issues(self, ctx: AgentContext, output: BaseModel, **kwargs: Any) -> list[str]:
         assert isinstance(output, EditorOutput)

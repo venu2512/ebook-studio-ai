@@ -141,7 +141,7 @@ class MockLLM(LLMClient):
         budgets = [per] * chapter_count
         budgets[0] += target_words - sum(budgets)  # absorb remainder
 
-        parts = [{"title": "Part I: Foundations", "chapters": []}]
+        parts: list[dict[str, Any]] = [{"title": "Part I: Foundations", "chapters": []}]
         midway = chapter_count // 2
         for i in range(chapter_count):
             if i == midway and chapter_count > 3:
@@ -186,14 +186,14 @@ class MockLLM(LLMClient):
         templates = [
             f"Getting Started with {short}",
             f"The Core Principles of {short}",
-            f"Setting Up for Success",
-            f"Common Mistakes and How to Avoid Them",
-            f"A Practical Walkthrough",
-            f"Tools and Techniques",
-            f"Scaling and Sustaining Your Results",
-            f"Putting It All Together",
-            f"Advanced Patterns",
-            f"Building Your Own System",
+            "Setting Up for Success",
+            "Common Mistakes and How to Avoid Them",
+            "A Practical Walkthrough",
+            "Tools and Techniques",
+            "Scaling and Sustaining Your Results",
+            "Putting It All Together",
+            "Advanced Patterns",
+            "Building Your Own System",
         ]
         return templates[index % len(templates)]
 
@@ -336,8 +336,9 @@ class MockLLM(LLMClient):
         return {
             "description": (
                 f"{title} is a practical, step-by-step guide for readers who want results "
-                "without wading through theory. " + (f"{subtitle}. " if subtitle else "") +
-                "Each chapter ends with a checklist so you can act immediately."
+                "without wading through theory. "
+                + (f"{subtitle}. " if subtitle else "")
+                + "Each chapter ends with a checklist so you can act immediately."
             ),
             "short_description": f"A practical guide: {title}.",
             "keywords": list(dict.fromkeys([*keywords, "handbook", "step by step"]))[:10],
@@ -350,8 +351,14 @@ class MockLLM(LLMClient):
                 "No hype, no manufactured urgency, and no unrealistic promises",
             ],
             "social_posts": [
-                {"platform": "twitter", "text": f"New guide: {title}. Practical steps, zero fluff."},
-                {"platform": "linkedin", "text": f"I wrote {title} for people who want a clear process."},
+                {
+                    "platform": "twitter",
+                    "text": f"New guide: {title}. Practical steps, zero fluff.",
+                },
+                {
+                    "platform": "linkedin",
+                    "text": f"I wrote {title} for people who want a clear process.",
+                },
                 {"platform": "instagram", "text": f"Just published: {title} 📘"},
             ],
             "email_sequence": [

@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base, JSONType, TimestampMixin, UUIDMixin
+from app.db.base import Base, TimestampMixin, UUIDMixin
 
 
 class Template(UUIDMixin, TimestampMixin, Base):

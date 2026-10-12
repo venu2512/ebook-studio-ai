@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy import ForeignKey, Index, Integer, String, Text, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base, JSONType, TimestampMixin, UUIDMixin
+from app.db.base import Base, TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from app.db.models.book import Book
@@ -54,7 +54,10 @@ class ChapterVersion(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "chapter_versions"
 
     chapter_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True), ForeignKey("chapters.id", ondelete="CASCADE"), nullable=False, index=True
+        Uuid(as_uuid=True),
+        ForeignKey("chapters.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False, default="")
@@ -64,6 +67,4 @@ class ChapterVersion(UUIDMixin, TimestampMixin, Base):
 
     chapter: Mapped[Chapter] = relationship(back_populates="versions")
 
-    __table_args__ = (
-        UniqueConstraint("chapter_id", "version", name="uq_chapter_version"),
-    )
+    __table_args__ = (UniqueConstraint("chapter_id", "version", name="uq_chapter_version"),)

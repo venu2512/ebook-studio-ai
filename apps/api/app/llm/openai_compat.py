@@ -38,7 +38,9 @@ class _TransientError(Exception):
 class OpenAICompatibleLLM(LLMClient):
     provider = "openai_compatible"
 
-    def __init__(self, *, base_url: str, api_key: str, default_timeout: int, max_retries: int) -> None:
+    def __init__(
+        self, *, base_url: str, api_key: str, default_timeout: int, max_retries: int
+    ) -> None:
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.default_timeout = default_timeout
@@ -54,7 +56,7 @@ class OpenAICompatibleLLM(LLMClient):
         json_schema: dict[str, Any] | None = None,
         task: str | None = None,
         mock_payload: dict[str, Any] | None = None,
-    ) -> LLMResponse:  # noqa: ARG002 - mock_payload ignored by design
+    ) -> LLMResponse:
         started = time.perf_counter()
         wire_messages = [{"role": m.role, "content": m.content} for m in messages]
 
@@ -105,7 +107,6 @@ class OpenAICompatibleLLM(LLMClient):
         )
 
     async def _post_with_retries(self, payload: dict[str, Any]) -> dict[str, Any]:
-        settings = get_settings()
         timeout = httpx.Timeout(self.default_timeout, connect=15.0)
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -138,9 +139,9 @@ class OpenAICompatibleLLM(LLMClient):
         url: str,
         headers: dict[str, str],
         payload: dict[str, Any],
-        timeout: httpx.Timeout,
+        request_timeout: httpx.Timeout,
     ) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        async with httpx.AsyncClient(timeout=request_timeout) as client:
             response = await client.post(url, headers=headers, json=payload)
 
         if response.status_code in (429, 500, 502, 503, 504):
