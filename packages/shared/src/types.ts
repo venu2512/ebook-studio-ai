@@ -72,6 +72,7 @@ export interface User {
   credits_balance: number;
   default_language: string;
   default_tone: string | null;
+  settings_json?: Record<string, unknown>;
   created_at: ISODate;
   last_login_at: ISODate | null;
 }

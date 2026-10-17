@@ -6,6 +6,8 @@ A single cached :class:`Settings` instance is exposed via :func:`get_settings`.
 
 from __future__ import annotations
 
+import os
+import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -17,8 +19,35 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 _API_DIR = Path(__file__).resolve().parents[2]
 _REPO_ROOT = _API_DIR.parent
 
+# Tests set every value they need through environment variables (see
+# ``app/tests/conftest.py``) and must stay hermetic: never let a developer's
+# local ``.env`` leak real values (a cloud LLM base URL, credit limits, ...)
+# into assertions. ``conftest`` sets ``APP_ENV=test`` before importing this.
+_TESTING = os.environ.get("APP_ENV", "").lower() == "test" or "pytest" in sys.modules
+_ENV_FILES = None if _TESTING else (_API_DIR / ".env", _REPO_ROOT / ".env")
+
+_OPENAI_DEFAULT_BASE_URL = "https://api.openai.com/v1"
+
+
+def resolve_llm_base_url(provider: str, base_url: str) -> str:
+    """Pick a provider-appropriate base URL when one isn't set explicitly.
+
+    ``ollama``/``local`` fall back to the local Ollama endpoint and ``nvidia``
+    to NVIDIA NIM, but only while the generic OpenAI default is in place. An
+    explicitly configured ``base_url`` always wins. Resolution uses the
+    *active* provider, which may differ from the configured default.
+    """
+    if base_url and base_url != _OPENAI_DEFAULT_BASE_URL:
+        return base_url
+    if provider == "nvidia":
+        return "https://integrate.api.nvidia.com/v1"
+    if provider in ("ollama", "local"):
+        return "http://localhost:11434/v1"
+    return base_url
+
+
 AppEnv = Literal["development", "staging", "production", "test"]
-LLMProvider = Literal["mock", "openai_compatible"]
+LLMProvider = Literal["mock", "openai_compatible", "nvidia", "ollama", "local"]
 StorageBackend = Literal["local", "s3"]
 ImageProvider = Literal["none", "openai_compatible"]
 JobExecutionMode = Literal["inline", "arq"]
@@ -29,8 +58,9 @@ class Settings(BaseSettings):
     """Typed, validated application settings."""
 
     model_config = SettingsConfigDict(
-        # Look for a .env in the API dir first, then the repo root.
-        env_file=(_API_DIR / ".env", _REPO_ROOT / ".env"),
+        # Look for a .env in the API dir first, then the repo root. Disabled
+        # under pytest so the suite is independent of a developer's .env.
+        env_file=_ENV_FILES,
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -76,6 +106,9 @@ class Settings(BaseSettings):
     google_redirect_uri: str = "http://localhost:3000/auth/callback/google"
 
     # -- LLM ----------------------------------------------------------------
+    # NOTE: never hardcode a real API key here. Configure keys through the
+    # environment / ``.env`` (see the root ``.env.example``). ``mock`` is the
+    # safe default so a fresh checkout never makes network calls.
     llm_provider: LLMProvider = "mock"
     llm_base_url: str = "https://api.openai.com/v1"
     llm_api_key: str = ""
@@ -90,7 +123,7 @@ class Settings(BaseSettings):
     llm_model_designer: str = "gpt-4o-mini"
     llm_model_publisher: str = "gpt-4o-mini"
     llm_model_marketer: str = "gpt-4o-mini"
-    default_book_token_budget: int = 250_000
+    default_book_token_budget: int = 2_500_000
     max_chapters: int = 40
 
     # -- Images -------------------------------------------------------------
@@ -181,6 +214,11 @@ class Settings(BaseSettings):
             "publisher": self.llm_model_publisher,
             "marketer": self.llm_model_marketer,
         }
+
+    @property
+    def resolved_llm_base_url(self) -> str:
+        """Base URL resolved for the configured provider."""
+        return resolve_llm_base_url(self.llm_provider, self.llm_base_url)
 
     def model_for_agent(self, agent_name: str) -> str:
         return self.agent_model_map.get(agent_name, self.llm_model_default)

@@ -68,6 +68,17 @@ async def regenerate_cover(
     return await _cover_payload(db, book)
 
 
+@router.post("/books/{book_id}/cover/regenerate", response_model=CoverRead)
+async def regenerate_cover_alias(
+    book_id: uuid.UUID,
+    payload: CoverRegenerateRequest,
+    user: CurrentUser,
+    db: SessionDep,
+) -> CoverRead:
+    """Explicit /cover/regenerate endpoint matching PDF specification."""
+    return await regenerate_cover(book_id, payload, user, db)
+
+
 @router.get("/books/{book_id}/assets", response_model=list[dict])
 async def list_assets(book_id: uuid.UUID, user: CurrentUser, db: SessionDep) -> list[dict]:
     """Cover and uploaded images attached to a book."""

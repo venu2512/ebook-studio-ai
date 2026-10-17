@@ -100,7 +100,15 @@ export const authApi = {
   verifyEmail(token: string): Promise<MessageResponse> {
     return api.post<MessageResponse>("/api/v1/auth/verify-email", { token }, { anonymous: true });
   },
+  async google(payload: { id_token?: string; code?: string }): Promise<TokenResponse> {
+    const tokens = await api.post<TokenResponse>("/api/v1/auth/google", payload, {
+      anonymous: true,
+    });
+    tokenStore.set(tokens.access_token, tokens.refresh_token);
+    return tokens;
+  },
 };
+
 
 /**
  * The register endpoint returns the user but sets `X-Access-Token`. Since the
@@ -133,7 +141,11 @@ export const usersApi = {
   deleteAccount(password: string): Promise<MessageResponse> {
     return api.delete<MessageResponse>("/api/v1/users/me", { password, confirm: true });
   },
+  exportData(): Promise<Record<string, unknown>> {
+    return api.get<Record<string, unknown>>("/api/v1/users/me/export");
+  },
 };
+
 
 export const booksApi = {
   list(params: {

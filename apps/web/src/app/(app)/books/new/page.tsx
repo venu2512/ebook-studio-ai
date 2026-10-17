@@ -26,6 +26,7 @@ import {
 import { PageHeader } from "@/components/app/page-header";
 import { booksApi } from "@/lib/api/endpoints";
 import { ApiError } from "@/lib/api/client";
+import { useAuth } from "@/lib/auth/auth-provider";
 import { cn } from "@/lib/utils";
 import {
   bookCreateSchema,
@@ -34,14 +35,53 @@ import {
   isSensitiveCategory,
   LANGUAGES,
   TONES,
+  INTERIOR_TEMPLATES,
+  estimateBookTokensAndCredits,
   wordsForPages,
   type BookCreateValues,
 } from "@ebook/shared";
 
-const STEPS = ["Topic", "Audience", "Style", "Review"] as const;
+const STEPS = ["Topic", "Audience", "Style & Template", "Cost & Review"] as const;
+
+const DEFAULT_INTERIOR_TEMPLATES = [
+  {
+    slug: "classic",
+    name: "Classic",
+    description: "Serif body, centered headings, generous margins — timeless and readable.",
+  },
+  {
+    slug: "modern",
+    name: "Modern",
+    description: "Sans-serif headings, left-aligned, chapter divider rules — sleek & tech-forward.",
+  },
+  {
+    slug: "minimal",
+    name: "Minimal",
+    description: "High-contrast editorial, small-caps headers, distraction-free reading.",
+  },
+  {
+    slug: "elegant",
+    name: "Elegant",
+    description: "Literary serif display, drop caps, premium publisher layout.",
+  },
+] as const;
+
+function calculateTokensAndCredits(targetPages: number, targetWords: number) {
+  if (typeof estimateBookTokensAndCredits === "function") {
+    return estimateBookTokensAndCredits(targetPages, targetWords);
+  }
+  const chapters = Math.max(5, Math.round(targetPages / 3));
+  const outputTokens = Math.round(targetWords * 1.35);
+  const inputOverhead = 1200 + chapters * 900;
+  const revisionTokens = Math.round(outputTokens * 0.9);
+  const totalTokens = outputTokens + inputOverhead + revisionTokens;
+  const credits = Math.max(1, Math.round((totalTokens / 1000) * 5));
+  return { tokens: totalTokens, credits, chapters };
+}
 
 export default function NewBookPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [step, setStep] = React.useState(0);
   const [keywordsText, setKeywordsText] = React.useState("");
 
@@ -113,6 +153,8 @@ export default function NewBookPage() {
   function back() {
     setStep((s) => Math.max(s - 1, 0));
   }
+
+  const templates = (INTERIOR_TEMPLATES && INTERIOR_TEMPLATES.length > 0) ? INTERIOR_TEMPLATES : DEFAULT_INTERIOR_TEMPLATES;
 
   const words = wordsForPages(values.target_pages || 20);
   const sensitive = isSensitiveCategory(values.category);
@@ -281,10 +323,11 @@ export default function NewBookPage() {
                           {...register("target_pages", { valueAsNumber: true })}
                         />
                         <p className="text-xs text-muted-foreground">
-                          ≈ {words.toLocaleString()} words
+                          ≈ {words.toLocaleString()} words (~{Math.max(5, Math.round((values.target_pages || 20) / 3))} chapters)
                         </p>
                       </div>
                     </div>
+
                     <div className="space-y-2">
                       <Label>Tone</Label>
                       <div className="grid gap-2 sm:grid-cols-3">
@@ -306,6 +349,29 @@ export default function NewBookPage() {
                         ))}
                       </div>
                     </div>
+
+                    <div className="space-y-2">
+                      <Label>Interior Layout & Template</Label>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {templates.map((tmpl) => (
+                          <button
+                            key={tmpl.slug}
+                            type="button"
+                            onClick={() => setValue("template", tmpl.slug, { shouldValidate: true })}
+                            className={cn(
+                              "rounded-lg border p-3 text-left text-sm transition-colors",
+                              (values.template || "classic") === tmpl.slug
+                                ? "border-primary bg-primary/5 ring-1 ring-primary"
+                                : "hover:bg-accent",
+                            )}
+                          >
+                            <span className="block font-medium">{tmpl.name}</span>
+                            <span className="text-xs text-muted-foreground">{tmpl.description}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="style_guide">Style guide (optional)</Label>
                       <Textarea
@@ -319,15 +385,62 @@ export default function NewBookPage() {
                 )}
 
                 {step === 3 && (
-                  <div className="space-y-4">
+                  <div className="space-y-5">
+                    {/* Cost & Token Budget Estimate Widget */}
+                    {(() => {
+                      const costEstimate = calculateTokensAndCredits(values.target_pages || 20, words);
+                      const userBalance = user?.credits_balance ?? 0;
+                      const hasSufficient = userBalance >= costEstimate.credits;
+
+                      return (
+                        <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-5 shadow-xs">
+                          <div className="mb-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="size-4 text-primary" />
+                              <span className="font-semibold text-foreground">Estimated Credit Cost & Budget</span>
+                            </div>
+                            <Badge variant={hasSufficient ? "secondary" : "destructive"}>
+                              {hasSufficient ? "Sufficient Credits" : "Low Balance"}
+                            </Badge>
+                          </div>
+
+                          <div className="grid gap-4 sm:grid-cols-3">
+                            <div className="rounded-lg border bg-background/80 p-3">
+                              <p className="text-xs text-muted-foreground">Est. Cost</p>
+                              <p className="mt-1 text-2xl font-bold text-primary">{costEstimate.credits} credits</p>
+                              <p className="text-[11px] text-muted-foreground">≈ {costEstimate.tokens.toLocaleString()} tokens</p>
+                            </div>
+                            <div className="rounded-lg border bg-background/80 p-3">
+                              <p className="text-xs text-muted-foreground">Your Balance</p>
+                              <p className="mt-1 text-2xl font-bold text-foreground">{userBalance} credits</p>
+                              <p className="text-[11px] text-muted-foreground">Available on account</p>
+                            </div>
+                            <div className="rounded-lg border bg-background/80 p-3">
+                              <p className="text-xs text-muted-foreground">Balance After</p>
+                              <p className={cn("mt-1 text-2xl font-bold", hasSufficient ? "text-foreground" : "text-destructive")}>
+                                {userBalance - costEstimate.credits} credits
+                              </p>
+                              <p className="text-[11px] text-muted-foreground">Enforced per-book budget</p>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
+                            <p className="font-medium text-foreground">Predictable Token Budget Policy:</p>
+                            <p>• Output writing & research overhead capped at ~{costEstimate.tokens.toLocaleString()} tokens for {costEstimate.chapters} chapters.</p>
+                            <p>• Credits are deducted exactly once when generation begins. Retries and worker restarts never double-charge.</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     <div className="rounded-lg border bg-muted/30 p-5">
                       <div className="mb-3 flex items-center gap-2">
-                        <Sparkles className="size-4 text-primary" />
-                        <span className="font-medium">Ready to plan</span>
+                        <Check className="size-4 text-primary" />
+                        <span className="font-medium">Book Specification Summary</span>
                       </div>
                       <dl className="grid gap-3 text-sm sm:grid-cols-2">
                         <Summary label="Topic" value={values.topic} full />
-                        <Summary label="Title" value={values.title || "Auto-generated"} />
+                        <Summary label="Title" value={values.title || "Auto-generated by Planner"} />
                         <Summary label="Author" value={values.author_name || "—"} />
                         <Summary label="Audience" value={values.audience} />
                         <Summary label="Category" value={values.category} />
@@ -340,8 +453,12 @@ export default function NewBookPage() {
                           value={TONES.find((t) => t.value === values.tone)?.label ?? values.tone}
                         />
                         <Summary
-                          label="Length"
-                          value={`${values.target_pages} pages · ${words.toLocaleString()} words`}
+                          label="Interior Template"
+                          value={templates.find((t) => t.slug === values.template)?.name ?? (values.template || "Classic")}
+                        />
+                        <Summary
+                          label="Target Length"
+                          value={`${values.target_pages} pages · ~${words.toLocaleString()} words`}
                         />
                       </dl>
                       {keywordsText && (
@@ -359,8 +476,7 @@ export default function NewBookPage() {
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Next you&apos;ll review the generated outline before any chapters are written.
-                      Outline generation costs a small number of credits, estimated before it runs.
+                      Next step: the Book Planner & Researcher will craft the full outline for your review and approval before any chapters are drafted.
                     </p>
                   </div>
                 )}

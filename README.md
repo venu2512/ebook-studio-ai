@@ -249,13 +249,50 @@ list). The most useful knobs:
 | `DATABASE_URL` | Async SQLAlchemy URL (Postgres or SQLite). |
 | `REDIS_URL` | Queue, cache and rate-limit backend. |
 | `JWT_SECRET` | **Set this in production** — a long random string. |
-| `LLM_PROVIDER` | `mock` (offline, deterministic) or `openai_compatible`. |
+| `LLM_PROVIDER` | `mock`, `openai_compatible`, `nvidia`, `ollama`, or `local`. |
 | `LLM_BASE_URL` / `LLM_API_KEY` | Endpoint + key for your provider. |
 | `LLM_MODEL_*` | Per-agent model selection (cheap model for structure, strong for prose). |
 | `IMAGE_PROVIDER` | `none` (deterministic covers) or `openai_compatible`. |
 | `STORAGE_BACKEND` | `local` or `s3`. |
 | `JOB_EXECUTION_MODE` | `inline` (default) or `arq`. |
 | `CORS_ORIGINS` | Comma-separated browser origins allowed to call the API. |
+
+### Using NVIDIA NIM Cloud Models
+
+To power the 8-agent pipeline with high-throughput NVIDIA accelerated GPU models:
+
+```env
+LLM_PROVIDER=openai_compatible
+LLM_BASE_URL=https://integrate.api.nvidia.com/v1
+LLM_API_KEY=nvapi-...
+LLM_MODEL_DEFAULT=meta/llama-3.1-8b-instruct
+LLM_MODEL_WRITER=meta/llama-3.3-70b-instruct
+LLM_MODEL_FACT_CHECKER=meta/llama-3.3-70b-instruct
+```
+
+### Running 100% Local LLMs (Ollama & LM Studio)
+
+No API key is required when running locally:
+
+**With Ollama:**
+1. Install and start Ollama: `ollama run llama3.2`
+2. Configure `.env`:
+   ```env
+   LLM_PROVIDER=ollama
+   LLM_BASE_URL=http://localhost:11434/v1
+   LLM_MODEL_DEFAULT=llama3.2
+   ```
+
+**With LM Studio:**
+1. Load a GGUF model in LM Studio and click **Start Server** (port 1234).
+2. Configure `.env`:
+   ```env
+   LLM_PROVIDER=local
+   LLM_BASE_URL=http://localhost:1234/v1
+   LLM_MODEL_DEFAULT=local-model
+   ```
+
+You can also switch providers directly in the web app under **Settings → AI Model & Local LLM Provider**.
 
 ---
 
@@ -349,15 +386,111 @@ uv run python -m app.scripts.smoke_live
 
 ---
 
-## Troubleshooting
+## Agent flow & state machine
 
-| Symptom | Fix |
-| --- | --- |
-| `relation "..." does not exist` on first run | Run `alembic upgrade head` (Docker does this automatically). |
-| Login works but the dashboard is empty | Seed templates/demo data: `python -m app.scripts.seed`. |
-| Web can't reach the API in the browser | Check `NEXT_PUBLIC_API_BASE_URL` and that it is in `CORS_ORIGINS`. |
-| Generation seems stuck | In `inline` mode it runs in the API process; check API logs. In `arq` mode check the worker container. |
-| PDFs look plain | Install the `pdf` extra (`uv sync --extra pdf`) for WeasyPrint rendering. |
+```mermaid
+flowchart TD
+    A[Topic & Parameters] --> B[1. Researcher]
+    B --> C[2. Book Planner]
+    C --> D{User Approval Gate}
+    D -- Rejected/Edited --> C
+    D -- Approved --> E[3. Writer: Chapter by Chapter]
+    E --> F[4. Editor]
+    F --> G[5. Fact Checker]
+    G -- Unsupported Claims --> E
+    G -- Claims Verified --> H[6. Designer]
+    H --> I[7. Publisher: PDF, EPUB, DOCX]
+    I --> J[8. Marketing Specialist]
+    J --> K[Finished Book & Launch Kit]
+```
+
+### Quality gates per agent
+
+| Stage | Input | Output | Automated Quality Gate |
+|---|---|---|---|
+| **Researcher** | Topic, audience, category, tone | Research notes & themes | At least N sources; claims must cite source URL or be marked unverified. |
+| **Book Planner** | Research notes, target length | Outline, chapters, budgets | Chapter word budgets sum within 10% of target; no duplicate chapters. |
+| **Writer** | Chapter brief, style guide, bible | Chapter markdown | Meets word budget within 15%; adheres to voice in book bible. |
+| **Editor** | Chapter draft, style guide | Polished prose & diff notes | Target readability score met; repetitive filler removed; tone consistency. |
+| **Fact Checker** | Edited chapter, research notes | Claim verdicts & corrections | No unsupported statistics or fake quotes remain; disclaimers on sensitive topics. |
+| **Designer** | Book metadata, tone, category | Cover prompt, palette, fonts | Cover title verified for high contrast and legibility at thumbnail scale. |
+| **Publisher** | Final chapters, template | PDF, EPUB, DOCX files | EPUB passes epubcheck 3.0 validation; internal TOC hyperlinks verified. |
+| **Marketing** | Final book chapters & metadata | Blurb, keywords, launch copy | Amazon KDP length limits respected; 7 targeted keywords; zero unverifiable claims. |
+
+---
+
+## Production deployment
+
+### 1. Frontend on Vercel (`apps/web`)
+
+1. Connect your repository to **Vercel**.
+2. Set **Root Directory** to `apps/web`.
+3. Set **Framework Preset** to `Next.js`.
+4. Configure Environment Variables:
+   ```env
+   NEXT_PUBLIC_API_BASE_URL=https://api.yourdomain.com/api/v1
+   ```
+5. Deploy. Vercel automatically runs `pnpm build` across the monorepo workspace dependencies (`packages/shared`).
+
+### 2. API & Workers on Render
+
+1. Create a **PostgreSQL** instance on Render (Postgres 16).
+2. Create a **Redis** instance on Render.
+3. Deploy the **FastAPI Web Service**:
+   - Environment: `Docker` (pointing to `apps/api/Dockerfile`)
+   - Start Command: `uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - Set environment variables:
+     ```env
+     DATABASE_URL=postgresql+asyncpg://...
+     REDIS_URL=rediss://...
+     LLM_PROVIDER=openai_compatible
+     LLM_API_KEY=your-api-key
+     STORAGE_BACKEND=s3
+     S3_BUCKET_NAME=your-bucket
+     CORS_ORIGINS=["https://your-web-app.vercel.app"]
+     ```
+4. Deploy the **Background Worker** (Render Background Worker service):
+   - Environment: `Docker` (same `apps/api/Dockerfile`)
+   - Start Command: `uv run python -m arq app.workers.pipeline_worker.WorkerSettings`
+   - Share the identical environment variables from the web service.
+
+### 3. Containerized deployment on Fly.io
+
+1. Launch PostgreSQL and Redis:
+   ```bash
+   fly postgres create --name ebook-postgres
+   fly redis create --name ebook-redis
+   ```
+2. Launch the API app:
+   ```bash
+   cd apps/api
+   fly launch --dockerfile Dockerfile
+   fly secrets set DATABASE_URL="..." REDIS_URL="..." JWT_SECRET_KEY="..."
+   fly deploy
+   ```
+
+### 4. Enterprise AWS deployment (ECS / App Runner / S3)
+
+- **Compute:** Deploy `apps/api` container onto **AWS App Runner** or **ECS Fargate** with an Application Load Balancer. Run worker containers in a dedicated ECS Fargate task family.
+- **Database & Cache:** **AWS RDS PostgreSQL 16** with automated backups and **Amazon ElastiCache Redis 7**.
+- **Storage:** **Amazon S3** bucket with private access and CloudFront pre-signed URLs. Set `STORAGE_BACKEND=s3`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `S3_BUCKET_NAME`.
+- **Secrets:** Store Stripe keys, JWT secrets, and LLM API keys in **AWS Secrets Manager**.
+
+---
+
+## API collections & deliverables
+
+The `docs/` folder contains verified, production-ready deliverables:
+
+* **Postman Collection:** [`docs/ebook_studio_api.postman_collection.json`](docs/ebook_studio_api.postman_collection.json) — complete endpoints for Auth, Users, Books, Outline, Chapters, Jobs, SSE Streams, Exports, Cover Design, Marketing Kits, and Billing.
+* **HTTP Client Collection:** [`docs/api.http`](docs/api.http) — ready for the VS Code REST Client extension.
+* **Interactive OpenAPI Specs:** Available locally at `http://localhost:8000/docs` (Swagger UI) and `http://localhost:8000/redoc` (Redoc).
+* **Sample Generated Book:** [`docs/sample_book/`](docs/sample_book/)
+  * [`metadata.json`](docs/sample_book/metadata.json): Topic, target pages, tone, and design specifications.
+  * [`outline.json`](docs/sample_book/outline.json): Approved parts, chapters, key points, and word budgets.
+  * [`chapters/`](docs/sample_book/chapters/): Complete markdown drafts formatted with callouts and takeaways.
+  * [`marketing_kit.json`](docs/sample_book/marketing_kit.json): Amazon KDP blurbs, 7 search keywords, social posts, and 3-part email launch sequence.
+  * [`sample_export.html`](docs/sample_book/sample_export.html): Complete rendered book interior with front matter, table of contents, and back matter.
 
 ---
 

@@ -1,0 +1,315 @@
+### ==============================================================================
+### eBook Studio AI — REST Client / HTTP Collection
+### ==============================================================================
+@baseUrl = http://localhost:8000/api/v1
+@demoEmail = demo@ebookstudio.local
+@demoPassword = demo-pass-123
+
+### ------------------------------------------------------------------------------
+### 1. Ops & Health
+### ------------------------------------------------------------------------------
+
+# @name healthCheck
+GET {{baseUrl}}/ops/health
+
+###
+
+# @name readinessProbe
+GET {{baseUrl}}/ops/ready
+
+### ------------------------------------------------------------------------------
+### 2. Authentication
+### ------------------------------------------------------------------------------
+
+# @name registerUser
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "author@example.com",
+  "password": "SecurePassword123!",
+  "full_name": "Demo Author"
+}
+
+###
+
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{demoEmail}}",
+  "password": "{{demoPassword}}"
+}
+
+### Token extraction from response
+@authToken = {{login.response.body.access_token}}
+
+###
+
+# @name refreshToken
+POST {{baseUrl}}/auth/refresh
+
+###
+
+# @name googleLogin
+POST {{baseUrl}}/auth/google
+Content-Type: application/json
+
+{
+  "id_token": "mock-google-id-token"
+}
+
+### ------------------------------------------------------------------------------
+### 3. Users & Ledger
+### ------------------------------------------------------------------------------
+
+# @name getMe
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name updateMe
+PATCH {{baseUrl}}/users/me
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "full_name": "Senior Author",
+  "default_language": "en",
+  "default_tone": "authoritative"
+}
+
+###
+
+# @name getCredits
+GET {{baseUrl}}/users/me/credits
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name exportUserDataGDPR
+GET {{baseUrl}}/users/me/export
+Authorization: Bearer {{authToken}}
+
+### ------------------------------------------------------------------------------
+### 4. Books & Outlines
+### ------------------------------------------------------------------------------
+
+# @name createBook
+POST {{baseUrl}}/books
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "topic": "The Solo Founder Playbook: Building a Scalable Digital Product",
+  "title": "The Solo Founder Playbook",
+  "author_name": "Alex Mercer",
+  "audience": "Technical Founders and Solo Creators",
+  "category": "Business",
+  "language": "en",
+  "tone": "authoritative",
+  "target_pages": 25,
+  "template": "classic",
+  "keywords": ["saas", "bootstrapping", "solopreneur"]
+}
+
+### Extracted book ID
+@bookId = {{createBook.response.body.id}}
+
+###
+
+# @name listBooks
+GET {{baseUrl}}/books?page=1&page_size=20
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name getBook
+GET {{baseUrl}}/books/{{bookId}}
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name getCostEstimate
+GET {{baseUrl}}/books/{{bookId}}/cost-estimate
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name getBookBible
+GET {{baseUrl}}/books/{{bookId}}/bible
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name generateOutline
+POST {{baseUrl}}/books/{{bookId}}/outline
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name approveOutline
+POST {{baseUrl}}/books/{{bookId}}/outline/approve
+Authorization: Bearer {{authToken}}
+
+### ------------------------------------------------------------------------------
+### 5. Full Generation & Realtime Streaming
+### ------------------------------------------------------------------------------
+
+# @name startGeneration
+POST {{baseUrl}}/books/{{bookId}}/generate
+Authorization: Bearer {{authToken}}
+
+### Extracted job ID
+@jobId = {{startGeneration.response.body.id}}
+
+###
+
+# @name getJobStatus
+GET {{baseUrl}}/jobs/{{jobId}}
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name streamJobEventsSSE
+GET {{baseUrl}}/jobs/{{jobId}}/events
+Authorization: Bearer {{authToken}}
+Accept: text/event-stream
+
+###
+
+# @name cancelJob
+POST {{baseUrl}}/jobs/{{jobId}}/cancel
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name retryJob
+POST {{baseUrl}}/jobs/{{jobId}}/retry
+Authorization: Bearer {{authToken}}
+
+### ------------------------------------------------------------------------------
+### 6. Chapters & Editor
+### ------------------------------------------------------------------------------
+
+# @name listChapters
+GET {{baseUrl}}/books/{{bookId}}/chapters
+Authorization: Bearer {{authToken}}
+
+### Assume chapter ID from first chapter
+@chapterId = {{listChapters.response.body[0].id}}
+
+###
+
+# @name updateChapterContent
+PATCH {{baseUrl}}/chapters/{{chapterId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "content": "# The Leverage Mindset\n\nTo build a durable single-operator business, leverage must precede effort...",
+  "editor_notes": "Author edited opening thesis"
+}
+
+###
+
+# @name regenerateChapter
+POST {{baseUrl}}/chapters/{{chapterId}}/regenerate
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "action": "rewrite",
+  "prompt": "Increase emphasis on software leverage and automation loops"
+}
+
+###
+
+# @name getChapterVersions
+GET {{baseUrl}}/chapters/{{chapterId}}/versions
+Authorization: Bearer {{authToken}}
+
+### ------------------------------------------------------------------------------
+### 7. Cover Design & Marketing
+### ------------------------------------------------------------------------------
+
+# @name regenerateCover
+POST {{baseUrl}}/books/{{bookId}}/cover/regenerate
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "prompt": "Bold clean minimalist architectural geometric cover in navy and gold",
+  "style": "bold"
+}
+
+###
+
+# @name getMarketingKit
+GET {{baseUrl}}/books/{{bookId}}/marketing
+Authorization: Bearer {{authToken}}
+
+### ------------------------------------------------------------------------------
+### 8. Exports & Downloads
+### ------------------------------------------------------------------------------
+
+# @name createExport
+POST {{baseUrl}}/books/{{bookId}}/exports
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "format": "pdf",
+  "template": "classic"
+}
+
+### Extracted export ID
+@exportId = {{createExport.response.body.id}}
+
+###
+
+# @name downloadExport
+GET {{baseUrl}}/exports/{{exportId}}/download
+Authorization: Bearer {{authToken}}
+
+### ------------------------------------------------------------------------------
+### 9. Billing & Stripe
+### ------------------------------------------------------------------------------
+
+# @name getPlans
+GET {{baseUrl}}/billing/plans
+
+###
+
+# @name createCheckout
+POST {{baseUrl}}/billing/checkout
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "plan_or_pack_id": "pro",
+  "success_url": "http://localhost:3000/billing?success=1",
+  "cancel_url": "http://localhost:3000/billing?canceled=1"
+}
+
+### ------------------------------------------------------------------------------
+### 10. Admin Endpoints
+### ------------------------------------------------------------------------------
+
+# @name adminListUsers
+GET {{baseUrl}}/admin/users
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name adminListJobs
+GET {{baseUrl}}/admin/jobs
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name adminGetUsage
+GET {{baseUrl}}/admin/usage
+Authorization: Bearer {{authToken}}

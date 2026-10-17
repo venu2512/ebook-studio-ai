@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { BookOpen, MoreVertical, PlusCircle, Search, Trash2 } from "lucide-react";
+import { BookOpen, CheckCircle2, Circle, MoreVertical, PlusCircle, Search, Sparkles, Trash2, X } from "lucide-react";
+
 import { toast } from "sonner";
 import type { BookWithProgress } from "@ebook/shared";
 
@@ -87,6 +88,9 @@ export default function DashboardPage() {
           value={books.filter((b) => b.status === "ready").length}
         />
       </div>
+
+      <OnboardingChecklist books={books} />
+
 
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
@@ -275,4 +279,93 @@ function BookCard({ book, index }: { book: BookWithProgress; index: number }) {
     </motion.div>
   );
 }
+
+function OnboardingChecklist({ books }: { books: BookWithProgress[] }) {
+  const [dismissed, setDismissed] = React.useState(false);
+
+  const hasCreatedBook = books.length > 0;
+  const hasOutline = books.some((b) =>
+    ["awaiting_approval", "writing", "editing", "designing", "ready"].includes(b.status),
+  );
+  const hasGeneratedChapters = books.some((b) => b.completed_chapters > 0 || b.status === "ready");
+  const hasExported = books.some((b) => b.status === "ready");
+
+  const completedCount = [hasCreatedBook, hasOutline, hasGeneratedChapters, hasExported].filter(
+    Boolean,
+  ).length;
+
+  if (dismissed || (hasCreatedBook && hasExported)) {
+    return null;
+  }
+
+  return (
+    <Card className="mb-6 border-primary/30 bg-gradient-to-r from-primary/5 via-fuchsia-500/5 to-transparent">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="grid size-7 place-items-center rounded-full bg-primary/10 text-primary">
+              <Sparkles className="size-4" />
+            </span>
+            <h3 className="font-medium text-sm sm:text-base">Quick start checklist ({completedCount}/4)</h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDismissed(true)}
+            className="text-muted-foreground hover:text-foreground"
+            aria-label="Dismiss checklist"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="flex items-center gap-2.5 rounded-lg border bg-background/80 p-2.5 text-xs">
+            {hasCreatedBook ? (
+              <CheckCircle2 className="size-4 text-success shrink-0" />
+            ) : (
+              <Circle className="size-4 text-muted-foreground shrink-0" />
+            )}
+            <span className={hasCreatedBook ? "line-through text-muted-foreground" : "font-medium"}>
+              1. Create a book
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2.5 rounded-lg border bg-background/80 p-2.5 text-xs">
+            {hasOutline ? (
+              <CheckCircle2 className="size-4 text-success shrink-0" />
+            ) : (
+              <Circle className="size-4 text-muted-foreground shrink-0" />
+            )}
+            <span className={hasOutline ? "line-through text-muted-foreground" : "font-medium"}>
+              2. Approve the outline
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2.5 rounded-lg border bg-background/80 p-2.5 text-xs">
+            {hasGeneratedChapters ? (
+              <CheckCircle2 className="size-4 text-success shrink-0" />
+            ) : (
+              <Circle className="size-4 text-muted-foreground shrink-0" />
+            )}
+            <span className={hasGeneratedChapters ? "line-through text-muted-foreground" : "font-medium"}>
+              3. Run generation
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2.5 rounded-lg border bg-background/80 p-2.5 text-xs">
+            {hasExported ? (
+              <CheckCircle2 className="size-4 text-success shrink-0" />
+            ) : (
+              <Circle className="size-4 text-muted-foreground shrink-0" />
+            )}
+            <span className={hasExported ? "line-through text-muted-foreground" : "font-medium"}>
+              4. Download exports
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 

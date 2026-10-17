@@ -271,6 +271,9 @@ async def list_agent_runs(db: AsyncSession, job_id: uuid.UUID) -> list[AgentRun]
 
 
 async def require_sufficient_credits(db: AsyncSession, user: User, amount: int) -> None:
+    # Admins and VIP accounts have unlimited generation access
+    if getattr(user, "is_admin", False) or getattr(user, "role", "") == "admin":
+        return
     balance = await credits_service.get_balance(db, user.id)
     if balance < amount:
         raise InsufficientCreditsError(
@@ -279,11 +282,14 @@ async def require_sufficient_credits(db: AsyncSession, user: User, amount: int) 
         )
 
 
-async def assert_book_generatable(book: Book) -> None:
+async def assert_book_generatable(book: Book, user: User | None = None) -> None:
     """Guard rails shared by generation endpoints."""
     if book.deleted_at is not None:
         raise AppError("This book was deleted.", code="book_deleted", status_code=409)
-    if (book.tokens_used or 0) >= (book.token_budget or 0):
+    # Admin / VIP accounts have no token budget ceiling
+    if user and (getattr(user, "is_admin", False) or getattr(user, "role", "") == "admin"):
+        return
+    if (book.token_budget or 0) > 0 and (book.tokens_used or 0) >= (book.token_budget or 0):
         raise AppError(
             "This book has reached its token budget. Increase the budget to continue.",
             code="token_budget_exceeded",

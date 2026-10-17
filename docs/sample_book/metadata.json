@@ -1,0 +1,26 @@
+{
+  "id": "c3b8a1e2-45f6-4d89-9a1b-7c8d9e0f1a2b",
+  "title": "The Solo Founder Playbook",
+  "subtitle": "Building a High-Leverage Digital Product Business",
+  "author_name": "Elena Rostova",
+  "topic": "Practical frameworks for software engineers and creators to build profitable digital businesses without hiring staff",
+  "audience": "Technical creators, developers, and solopreneurs",
+  "category": "Business",
+  "language": "en",
+  "tone": "authoritative",
+  "target_pages": 25,
+  "target_word_count": 6250,
+  "actual_word_count": 6480,
+  "status": "ready",
+  "interior_template": "classic",
+  "cover_style": "minimal",
+  "cover_palette": {
+    "primary": "#0F172A",
+    "accent": "#F59E0B",
+    "background": "#FFFFFF"
+  },
+  "cover_prompt": "Clean minimalist geometric typography layout with dark slate background and warm amber accent rules",
+  "disclaimer_required": false,
+  "created_at": "2026-10-12T10:00:00Z",
+  "completed_at": "2026-10-12T10:04:12Z"
+}

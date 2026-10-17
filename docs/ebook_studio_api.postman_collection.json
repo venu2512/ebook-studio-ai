@@ -1,0 +1,577 @@
+{
+  "info": {
+    "name": "eBook Studio AI API",
+    "_postman_id": "7f8b9e6a-4d2c-4a1e-8e3d-1a2b3c4d5e6f",
+    "description": "Production API collection for eBook Studio AI covering Authentication, Users, Books, Outlines, Chapters, Jobs, SSE streaming, Exports, Cover Design, Marketing Kits, and Billing.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "chapterId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "jobId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "exportId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Ops & Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ops/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["ops", "health"]
+            }
+          }
+        },
+        {
+          "name": "Readiness Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ops/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["ops", "ready"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"author@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"full_name\": \"Demo Author\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.access_token) {",
+                  "    pm.collectionVariables.set('accessToken', json.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"author@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Google OAuth Sign-in",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_token\": \"mock-google-id-token\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/google", "host": ["{{baseUrl}}"], "path": ["auth", "google"] }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] }
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"verification-token-sample\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/verify-email", "host": ["{{baseUrl}}"], "path": ["auth", "verify-email"] }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"author@example.com\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["auth", "forgot-password"] }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-sample\",\n  \"password\": \"NewSecurePass123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/reset-password", "host": ["{{baseUrl}}"], "path": ["auth", "reset-password"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Jane Doe\",\n  \"default_language\": \"en\",\n  \"default_tone\": \"authoritative\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }
+          }
+        },
+        {
+          "name": "Get Credits & Transaction Ledger",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/users/me/credits", "host": ["{{baseUrl}}"], "path": ["users", "me", "credits"] }
+          }
+        },
+        {
+          "name": "Export All User Data (GDPR)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/users/me/export", "host": ["{{baseUrl}}"], "path": ["users", "me", "export"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Books",
+      "item": [
+        {
+          "name": "Create Book",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.collectionVariables.set('bookId', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topic\": \"Mastering Production Microservices with Go and Kubernetes\",\n  \"title\": \"Ship Reliable Microservices\",\n  \"author_name\": \"Jane Doe\",\n  \"audience\": \"Senior Backend Engineers\",\n  \"category\": \"Technology\",\n  \"language\": \"en\",\n  \"tone\": \"authoritative\",\n  \"target_pages\": 25,\n  \"template\": \"classic\",\n  \"keywords\": [\"go\", \"microservices\", \"kubernetes\"]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/books", "host": ["{{baseUrl}}"], "path": ["books"] }
+          }
+        },
+        {
+          "name": "List Books",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/books?page=1&page_size=20", "host": ["{{baseUrl}}"], "path": ["books"], "query": [{ "key": "page", "value": "1" }, { "key": "page_size", "value": "20" }] }
+          }
+        },
+        {
+          "name": "Get Book by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/books/{{bookId}}", "host": ["{{baseUrl}}"], "path": ["books", "{{bookId}}"] }
+          }
+        },
+        {
+          "name": "Get Book Cost Estimate",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/books/{{bookId}}/cost-estimate", "host": ["{{baseUrl}}"], "path": ["books", "{{bookId}}", "cost-estimate"] }
+          }
+        },
+        {
+          "name": "Get Running Book Bible",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/books/{{bookId}}/bible", "host": ["{{baseUrl}}"], "path": ["books", "{{bookId}}", "bible"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Outline",
+      "item": [
+        {
+          "name": "Generate Outline",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/books/{{bookId}}/outline", "host": ["{{baseUrl}}"], "path": ["books", "{{bookId}}", "outline"] }
+          }
+        },
+        {
+          "name": "Update Outline Blueprint",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"structure\": {\n    \"parts\": [\n      {\n        \"title\": \"Foundations\",\n        \"chapters\": [\n          {\n            \"title\": \"Architectural Principles\",\n            \"summary\": \"Core principles of scalable services\",\n            \"key_points\": [\"Decoupled state\", \"Observability first\"],\n            \"word_budget\": 1500\n          }\n        ]\n      }\n    ]\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/books/{{bookId}}/outline", "host": ["{{baseUrl}}"], "path": ["books", "{{bookId}}", "outline"] }
+          }
+        },
+        {
+          "name": "Approve Outline",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/books/{{bookId}}/outline/approve", "host": ["{{baseUrl}}"], "path": ["books", "{{bookId}}", "outline", "approve"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chapters",
+      "item": [
+        {
+          "name": "List Chapters",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/books/{{bookId}}/chapters", "host": ["{{baseUrl}}"], "path": ["books", "{{bookId}}", "chapters"] }
+          }
+        },
+        {
+          "name": "Update Chapter Prose",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"# Architectural Principles\\n\\nEvery robust microservice begins with disciplined domain boundaries...\",\n  \"editor_notes\": \"Manual refinement of intro section\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/chapters/{{chapterId}}", "host": ["{{baseUrl}}"], "path": ["chapters", "{{chapterId}}"] }
+          }
+        },
+        {
+          "name": "Regenerate Chapter with AI",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"rewrite\",\n  \"prompt\": \"Make the opening hook punchier and emphasize resilience patterns.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/chapters/{{chapterId}}/regenerate", "host": ["{{baseUrl}}"], "path": ["chapters", "{{chapterId}}", "regenerate"] }
+          }
+        },
+        {
+          "name": "Get Version History",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/chapters/{{chapterId}}/versions", "host": ["{{baseUrl}}"], "path": ["chapters", "{{chapterId}}", "versions"] }
+          }
+        },
+        {
+          "name": "Restore Previous Version",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/chapters/{{chapterId}}/restore", "host": ["{{baseUrl}}"], "path": ["chapters", "{{chapterId}}", "restore"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jobs & Generation",
+      "item": [
+        {
+          "name": "Start Full-Book Generation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.id) {",
+                  "    pm.collectionVariables.set('jobId', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/books/{{bookId}}/generate", "host": ["{{baseUrl}}"], "path": ["books", "{{bookId}}", "generate"] }
+          }
+        },
+        {
+          "name": "Get Job Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/jobs/{{jobId}}", "host": ["{{baseUrl}}"], "path": ["jobs", "{{jobId}}"] }
+          }
+        },
+        {
+          "name": "Stream Job Events (SSE)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/jobs/{{jobId}}/events", "host": ["{{baseUrl}}"], "path": ["jobs", "{{jobId}}", "events"] }
+          }
+        },
+        {
+          "name": "Cancel Job",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/jobs/{{jobId}}/cancel", "host": ["{{baseUrl}}"], "path": ["jobs", "{{jobId}}", "cancel"] }
+          }
+        },
+        {
+          "name": "Retry Failed Job",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/jobs/{{jobId}}/retry", "host": ["{{baseUrl}}"], "path": ["jobs", "{{jobId}}", "retry"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Exports",
+      "item": [
+        {
+          "name": "Request Export (PDF / EPUB / DOCX)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"pdf\",\n  \"template\": \"classic\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/books/{{bookId}}/exports", "host": ["{{baseUrl}}"], "path": ["books", "{{bookId}}", "exports"] }
+          }
+        },
+        {
+          "name": "Get Signed Download URL",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/exports/{{exportId}}/download", "host": ["{{baseUrl}}"], "path": ["exports", "{{exportId}}", "download"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cover & Marketing",
+      "item": [
+        {
+          "name": "Regenerate Cover Art",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Minimalist geometric architectural blueprint cover with deep indigo and amber accents\",\n  \"style\": \"minimal\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/books/{{bookId}}/cover/regenerate", "host": ["{{baseUrl}}"], "path": ["books", "{{bookId}}", "cover", "regenerate"] }
+          }
+        },
+        {
+          "name": "Get Marketing Launch Kit",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/books/{{bookId}}/marketing", "host": ["{{baseUrl}}"], "path": ["books", "{{bookId}}", "marketing"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Billing & Subscriptions",
+      "item": [
+        {
+          "name": "Get Billing Plans & Credit Packs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/billing/plans", "host": ["{{baseUrl}}"], "path": ["billing", "plans"] }
+          }
+        },
+        {
+          "name": "Create Checkout Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan_or_pack_id\": \"pro\",\n  \"success_url\": \"http://localhost:3000/billing?success=1\",\n  \"cancel_url\": \"http://localhost:3000/billing?canceled=1\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/billing/checkout", "host": ["{{baseUrl}}"], "path": ["billing", "checkout"] }
+          }
+        },
+        {
+          "name": "Create Customer Portal Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"return_url\": \"http://localhost:3000/billing\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/billing/portal", "host": ["{{baseUrl}}"], "path": ["billing", "portal"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/admin/users", "host": ["{{baseUrl}}"], "path": ["admin", "users"] }
+          }
+        },
+        {
+          "name": "List Jobs (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/admin/jobs", "host": ["{{baseUrl}}"], "path": ["admin", "jobs"] }
+          }
+        },
+        {
+          "name": "Get System Usage Metrics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{baseUrl}}/admin/usage", "host": ["{{baseUrl}}"], "path": ["admin", "usage"] }
+          }
+        }
+      ]
+    }
+  ]
+}

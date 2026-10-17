@@ -57,6 +57,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         storage_backend=settings.storage_backend,
         job_execution_mode=settings.job_execution_mode,
     )
+    # Automatically ensure special VIP testing accounts exist in non-production
+    if not settings.is_production:
+        try:
+            from app.scripts.create_special_account import ensure_schema
+            from app.scripts.create_special_account import main as ensure_vip
+
+            await ensure_schema()
+            await ensure_vip()
+        except Exception as exc:  # noqa: BLE001 - best-effort dev-only seeding
+            log.warning("special_account_autoseed_deferred", error=str(exc))
     yield
     await dispose_engine()
     log.info("app_stopped")

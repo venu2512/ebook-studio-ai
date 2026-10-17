@@ -1,0 +1,52 @@
+{
+  "book_id": "c3b8a1e2-45f6-4d89-9a1b-7c8d9e0f1a2b",
+  "title": "The Solo Founder Playbook",
+  "description": "Stop trading your hours for dollars. Learn how solo software engineers and digital creators build resilient, automated 7-figure businesses using modern code and media leverage. Written by an engineer for builders who value autonomy over vanity metrics.",
+  "keywords": [
+    "solopreneur business guide",
+    "bootstrapping saas handbook",
+    "solo founder playbook",
+    "digital product monetization",
+    "micro saas automation",
+    "passive income software",
+    "zero employee business"
+  ],
+  "categories": [
+    "Business & Money > Entrepreneurship & Small Business",
+    "Computers & Technology > Software Development"
+  ],
+  "bullet_points": [
+    "Why traditional employee scaling introduces coordination drag that slows you down",
+    "The 4 types of leverage (Labor, Capital, Code, Content) and how to stack them",
+    "The Pain-to-Effort matrix for picking high-margin digital products",
+    "How to run a pre-sale campaign that proves real financial demand before coding",
+    "Automating your customer acquisition and delivery funnels with zero manual work"
+  ],
+  "social_posts": [
+    {
+      "platform": "Twitter / X",
+      "content": "Why do 90% of solo founders burn out?\n\nThey build products that require linear manual support instead of leveraging code and media.\n\nIn 'The Solo Founder Playbook', I break down how to build a zero-employee micro-enterprise that scales without stress.\n\nGrab your copy today: https://gumroad.com/l/solo-founder"
+    },
+    {
+      "platform": "LinkedIn",
+      "content": "Most startup advice was written for founders raising venture capital to hire 50 people.\n\nIf you want to stay a single operator, you need a different playbook: one built on permissionless leverage, automated inbound funnels, and high-margin product design.\n\nI just published 'The Solo Founder Playbook' — available on Amazon Kindle and PDF: https://amzn.to/solo-founder"
+    }
+  ],
+  "email_sequence": [
+    {
+      "step": 1,
+      "subject": "The fatal myth of startup headcount",
+      "body": "Hi {name},\n\nWhen most people think of growing a business, they picture hiring employees and renting office space.\n\nIn software, that's often the fastest way to introduce coordination drag.\n\nHere is how permissionless leverage changes the game..."
+    },
+    {
+      "step": 2,
+      "subject": "Are you building a painkiller or a vitamin?",
+      "body": "Hi {name},\n\nYesterday we looked at leverage. Today, let's talk about product selection.\n\nIf your product idea requires 24/7 on-call customer support, it will trap you. Here is the Pain-to-Effort matrix to filter out bad ideas immediately..."
+    },
+    {
+      "step": 3,
+      "subject": "How to validate demand before writing code",
+      "body": "Hi {name},\n\nDon't spend 6 months building in secret.\n\nHere is the exact 3-step pre-sale validation framework that proves customers will pay before you write a single line of production code..."
+    }
+  ]
+}

@@ -108,10 +108,11 @@ class OpenAICompatibleLLM(LLMClient):
 
     async def _post_with_retries(self, payload: dict[str, Any]) -> dict[str, Any]:
         timeout = httpx.Timeout(self.default_timeout, connect=15.0)
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
+        headers: dict[str, str] = {
             "Content-Type": "application/json",
         }
+        if self.api_key and self.api_key not in ("local", "local-no-key", "none"):
+            headers["Authorization"] = f"Bearer {self.api_key}"
         url = f"{self.base_url}/chat/completions"
 
         try:
@@ -147,6 +148,16 @@ class OpenAICompatibleLLM(LLMClient):
         if response.status_code in (429, 500, 502, 503, 504):
             log.warning("llm_transient_error", status=response.status_code)
             raise _TransientError(f"HTTP {response.status_code}")
+        if response.status_code == 400 and "response_format" in payload:
+            err_text = response.text.lower()
+            if "response_format" in err_text or "json_object" in err_text:
+                log.info("llm_response_format_unsupported_retrying_without_it")
+                fallback_payload = dict(payload)
+                fallback_payload.pop("response_format", None)
+                async with httpx.AsyncClient(timeout=request_timeout) as client:
+                    fb_res = await client.post(url, headers=headers, json=fallback_payload)
+                    if fb_res.status_code < 400:
+                        return fb_res.json()
         if response.status_code >= 400:
             raise ProviderError(
                 f"Provider returned HTTP {response.status_code}.",

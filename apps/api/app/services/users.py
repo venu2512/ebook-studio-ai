@@ -127,3 +127,88 @@ async def list_transactions(
         .offset(offset)
     )
     return list(result.scalars().all()), int(total or 0)
+
+
+async def export_user_data(db: AsyncSession, user: User) -> dict[str, object]:
+    """Compile all user data into a portable GDPR export dictionary."""
+    from app.db.models import Book, Chapter, Export
+
+    txs, _ = await list_transactions(db, user.id, limit=500)
+    books_result = await db.execute(select(Book).where(Book.user_id == user.id))
+    books = list(books_result.scalars().all())
+
+    books_data = []
+    for b in books:
+        ch_result = await db.execute(
+            select(Chapter).where(Chapter.book_id == b.id).order_by(Chapter.order_index)
+        )
+        chapters = list(ch_result.scalars().all())
+        books_data.append(
+            {
+                "id": str(b.id),
+                "title": b.title,
+                "subtitle": b.subtitle,
+                "topic": b.topic,
+                "audience": b.audience,
+                "category": b.category,
+                "language": b.language,
+                "tone": b.tone,
+                "status": b.status,
+                "target_pages": b.target_pages,
+                "target_word_count": b.target_word_count,
+                "created_at": b.created_at.isoformat() if b.created_at else None,
+                "chapters": [
+                    {
+                        "id": str(c.id),
+                        "order_index": c.order_index,
+                        "title": c.title,
+                        "summary": c.summary,
+                        "word_count": c.word_count,
+                        "content": c.content,
+                    }
+                    for c in chapters
+                ],
+            }
+        )
+
+    exp_result = await db.execute(select(Export).where(Export.user_id == user.id))
+    exports = list(exp_result.scalars().all())
+
+    return {
+        "user": {
+            "id": str(user.id),
+            "email": user.email,
+            "full_name": user.full_name,
+            "plan": user.plan,
+            "role": user.role,
+            "credits_balance": user.credits_balance,
+            "default_language": user.default_language,
+            "default_tone": user.default_tone,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+        },
+        "credit_transactions": [
+            {
+                "id": str(t.id),
+                "amount": t.amount,
+                "balance_after": t.balance_after,
+                "reason": t.reason,
+                "description": t.description,
+                "created_at": t.created_at.isoformat() if t.created_at else None,
+            }
+            for t in txs
+        ],
+        "books": books_data,
+        "exports": [
+            {
+                "id": str(e.id),
+                "book_id": str(e.book_id),
+                "format": e.format,
+                "template": e.template,
+                "status": e.status,
+                "size_bytes": e.size_bytes,
+                "page_count": e.page_count,
+                "created_at": e.created_at.isoformat() if e.created_at else None,
+            }
+            for e in exports
+        ],
+    }

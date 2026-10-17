@@ -93,6 +93,29 @@ def test_factory_returns_mock_in_tests():
     assert get_llm_client() is get_llm_client()  # cached singleton
 
 
+def test_factory_supports_nvidia_and_local():
+    from app.llm.openai_compat import OpenAICompatibleLLM
+
+    # NVIDIA provider with user API key
+    nvidia_client = build_llm_client(
+        provider="nvidia",
+        api_key="nvapi-test-key-not-real",
+    )
+    assert isinstance(nvidia_client, OpenAICompatibleLLM)
+    assert nvidia_client.base_url == "https://integrate.api.nvidia.com/v1"
+    assert nvidia_client.api_key.startswith("nvapi-")
+
+    # Local Ollama without API key
+    ollama_client = build_llm_client(provider="ollama")
+    assert isinstance(ollama_client, OpenAICompatibleLLM)
+    assert ollama_client.base_url == "http://localhost:11434/v1"
+
+    # Local LM Studio without API key
+    local_client = build_llm_client(provider="local", base_url="http://localhost:1234/v1")
+    assert isinstance(local_client, OpenAICompatibleLLM)
+    assert local_client.base_url == "http://localhost:1234/v1"
+
+
 # ---------------------------------------------------------------------------
 # Mock provider synthesises schema-valid output for every task
 # ---------------------------------------------------------------------------

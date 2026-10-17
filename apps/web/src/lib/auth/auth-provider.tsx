@@ -14,6 +14,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<User>;
+  loginWithGoogle: (idToken?: string, code?: string) => Promise<User>;
   register: (email: string, password: string, fullName?: string) => Promise<User>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -43,6 +44,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     [queryClient],
   );
+
+  const loginWithGoogle = React.useCallback(
+    async (idToken?: string, code?: string) => {
+      await authApi.google({ id_token: idToken, code });
+      const me = await authApi.me();
+      queryClient.setQueryData(queryKeys.me, me);
+      return me;
+    },
+    [queryClient],
+  );
+
 
   const register = React.useCallback(
     async (email: string, password: string, fullName?: string) => {
@@ -74,12 +86,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: Boolean(user),
       isAdmin: user?.role === "admin",
       login,
+      loginWithGoogle,
       register,
       logout,
       refresh,
     }),
-    [user, isLoading, login, register, logout, refresh],
+    [user, isLoading, login, loginWithGoogle, register, logout, refresh],
   );
+
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

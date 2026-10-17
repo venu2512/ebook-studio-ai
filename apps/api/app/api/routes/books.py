@@ -93,7 +93,7 @@ async def cost_estimate(book_id: uuid.UUID, user: CurrentUser, db: SessionDep) -
         estimated_tokens=tokens,
         estimated_credits=credits,
         user_balance=user.credits_balance,
-        affordable=user.credits_balance >= credits,
+        affordable=bool(user.is_admin or user.credits_balance >= credits),
         breakdown={
             "chapters": int(chapter_count),
             "words": int(book.target_word_count),

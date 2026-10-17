@@ -75,3 +75,9 @@ async def delete_me(
     user.email = f"deleted+{user.id}@{user.email.split('@')[-1]}"
     await db.flush()
     return MessageResponse(message="Your account has been scheduled for deletion.")
+
+
+@router.get("/me/export", response_model=dict)
+async def export_my_data(user: CurrentUser, db: SessionDep) -> dict:
+    """GDPR data portability export. Returns all user data, books, chapters and exports."""
+    return await users_service.export_user_data(db, user)

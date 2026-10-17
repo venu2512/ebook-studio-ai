@@ -3,7 +3,8 @@
 import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, GripVertical, Plus, Save, Sparkles, Trash2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronUp, GripVertical, Plus, Save, Sparkles, Trash2 } from "lucide-react";
+
 import { toast } from "sonner";
 import type { Outline, OutlineChapter, OutlineStructure } from "@ebook/shared";
 
@@ -28,7 +29,7 @@ function chaptersOf(structure: OutlineStructure): OutlineChapter[] {
   return structure.parts.flatMap((p) => p.chapters);
 }
 
-export default function OutlinePage() {
+function OutlineContent() {
   const { bookId } = useParams<{ bookId: string }>();
   const params = useSearchParams();
   const queryClient = useQueryClient();
@@ -141,6 +142,15 @@ function OutlineEditor({ bookId, outline }: { bookId: string; outline: Outline }
     });
     setDirty(true);
   }
+
+  function moveChapter(partIndex: number, fromIdx: number, toIdx: number) {
+    if (toIdx < 0 || toIdx >= structure.parts[partIndex].chapters.length) return;
+    update((s) => {
+      const [item] = s.parts[partIndex].chapters.splice(fromIdx, 1);
+      s.parts[partIndex].chapters.splice(toIdx, 0, item);
+    });
+  }
+
 
   const save = useMutation({
     mutationFn: () =>
@@ -258,9 +268,29 @@ function OutlineEditor({ bookId, outline }: { bookId: string; outline: Outline }
             </CardHeader>
             <CardContent className="space-y-4">
               {part.chapters.map((chapter, chapterIndex) => (
-                <div key={chapterIndex} className="rounded-lg border p-4">
+                <div
+                  key={chapterIndex}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("text/plain", `${partIndex}:${chapterIndex}`);
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const raw = e.dataTransfer.getData("text/plain");
+                    if (raw) {
+                      const [pIdx, cIdx] = raw.split(":").map(Number);
+                      if (pIdx === partIndex && cIdx !== chapterIndex) {
+                        moveChapter(partIndex, cIdx, chapterIndex);
+                      }
+                    }
+                  }}
+                  className="rounded-lg border p-4 bg-background transition-shadow hover:shadow-sm"
+                >
                   <div className="mb-2 flex items-center gap-2">
-                    <GripVertical className="size-4 text-muted-foreground" />
+                    <span className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground">
+                      <GripVertical className="size-4" />
+                    </span>
                     <Input
                       value={chapter.title}
                       onChange={(e) =>
@@ -269,21 +299,49 @@ function OutlineEditor({ bookId, outline }: { bookId: string; outline: Outline }
                         )
                       }
                       placeholder="Chapter title"
+                      className="font-medium"
                     />
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="text-destructive"
-                      onClick={() =>
-                        update((s) => {
-                          s.parts[partIndex].chapters.splice(chapterIndex, 1);
-                        })
-                      }
-                      aria-label="Remove chapter"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    <div className="flex items-center gap-0.5">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={chapterIndex === 0}
+                        onClick={() => moveChapter(partIndex, chapterIndex, chapterIndex - 1)}
+                        title="Move chapter up"
+                        aria-label="Move chapter up"
+                      >
+                        <ChevronUp className="size-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={chapterIndex === part.chapters.length - 1}
+                        onClick={() => moveChapter(partIndex, chapterIndex, chapterIndex + 1)}
+                        title="Move chapter down"
+                        aria-label="Move chapter down"
+                      >
+                        <ChevronDown className="size-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-destructive hover:bg-destructive/10"
+                        onClick={() =>
+                          update((s) => {
+                            s.parts[partIndex].chapters.splice(chapterIndex, 1);
+                          })
+                        }
+                        title="Remove chapter"
+                        aria-label="Remove chapter"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
                   </div>
+
                   <Textarea
                     rows={2}
                     value={chapter.summary}
@@ -424,5 +482,20 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium capitalize">{value}</span>
     </div>
+  );
+}
+
+export default function OutlinePage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="space-y-6 p-6">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      }
+    >
+      <OutlineContent />
+    </React.Suspense>
   );
 }

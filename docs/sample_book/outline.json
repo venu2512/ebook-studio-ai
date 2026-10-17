@@ -1,0 +1,55 @@
+{
+  "title": "The Solo Founder Playbook",
+  "subtitle": "Building a High-Leverage Digital Product Business",
+  "reader_promise": "You will learn how to design, ship, and automate a profitable digital product business as a single operator using modern leverage.",
+  "title_options": [
+    "The Solo Founder Playbook",
+    "Zero-Employee Leverage",
+    "The Autonomous Micro-Enterprise"
+  ],
+  "parts": [
+    {
+      "title": "Part I: Leverage & Systems",
+      "chapters": [
+        {
+          "order_index": 1,
+          "title": "The Leverage Thesis",
+          "summary": "Why traditional headcount scaling is obsolete for software and media businesses, and how modern leverage compounds.",
+          "key_points": [
+            "The four types of leverage: labor, capital, code, and content",
+            "Eliminating coordination drag in single-operator setups",
+            "Designing products with zero marginal cost of reproduction"
+          ],
+          "word_budget": 2100
+        },
+        {
+          "order_index": 2,
+          "title": "Asymmetric Product Design",
+          "summary": "Selecting problems that reward speed and specialization while repelling legacy competitors.",
+          "key_points": [
+            "Finding painful, recurring B2B problems with high willingness to pay",
+            "The MVP that hurts: shipping before comfort",
+            "Pricing on value instead of hours spent"
+          ],
+          "word_budget": 2150
+        }
+      ]
+    },
+    {
+      "title": "Part II: Distribution & Operations",
+      "chapters": [
+        {
+          "order_index": 3,
+          "title": "Distribution Before Creation",
+          "summary": "Securing demand channels and feedback loops before writing a single line of production code.",
+          "key_points": [
+            "Building an audience in public without vanity metrics",
+            "The pre-sale mechanism that proves demand",
+            "Automated retention and referral loops"
+          ],
+          "word_budget": 2230
+        }
+      ]
+    }
+  ]
+}

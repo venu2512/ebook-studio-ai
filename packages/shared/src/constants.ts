@@ -159,3 +159,41 @@ export const COVER_STYLES = [
   "abstract",
   "vintage",
 ] as const;
+
+export const INTERIOR_TEMPLATES = [
+  {
+    slug: "classic",
+    name: "Classic",
+    description: "Serif body, centered headings, generous margins — timeless and readable.",
+  },
+  {
+    slug: "modern",
+    name: "Modern",
+    description: "Sans-serif headings, left-aligned, chapter divider rules — sleek & tech-forward.",
+  },
+  {
+    slug: "minimal",
+    name: "Minimal",
+    description: "High-contrast editorial, small-caps headers, distraction-free reading.",
+  },
+  {
+    slug: "elegant",
+    name: "Elegant",
+    description: "Literary serif display, drop caps, premium publisher layout.",
+  },
+] as const;
+
+/** Calculate rough token and credit estimates from pages and words */
+export function estimateBookTokensAndCredits(targetPages: number, targetWords: number): {
+  tokens: number;
+  credits: number;
+  chapters: number;
+} {
+  const chapters = Math.max(5, Math.round(targetPages / 3));
+  const outputTokens = Math.round(targetWords * 1.35);
+  const inputOverhead = 1200 + chapters * 900;
+  const revisionTokens = Math.round(outputTokens * 0.9);
+  const totalTokens = outputTokens + inputOverhead + revisionTokens;
+  const credits = Math.max(1, Math.round((totalTokens / 1000) * 5));
+  return { tokens: totalTokens, credits, chapters };
+}

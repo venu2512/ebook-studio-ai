@@ -21,6 +21,7 @@ class UserRead(ORMModel):
     credits_balance: int
     default_language: str
     default_tone: str | None
+    settings_json: dict = Field(default_factory=dict)
     created_at: datetime
     last_login_at: datetime | None
 

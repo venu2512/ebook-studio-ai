@@ -7,11 +7,13 @@ import {
   AlertTriangle,
   Check,
   History,
+  MessageSquare,
   RefreshCw,
   Save,
   Sparkles,
   Wand2,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import type { AIAction, ChapterListItem } from "@ebook/shared";
 
@@ -178,6 +180,11 @@ function ChapterEditor({ bookId, chapterId }: { bookId: string; chapterId: strin
   const [content, setContent] = React.useState("");
   const [dirty, setDirty] = React.useState(false);
   const [tone, setTone] = React.useState("professional");
+  const [showComments, setShowComments] = React.useState(false);
+  const [newComment, setNewComment] = React.useState("");
+  const [comments, setComments] = React.useState<Array<{ id: string; author: string; text: string; time: string }>>([
+    { id: "1", author: "Fact Checker", text: "Claims in sections 2 and 4 verified against research notes.", time: "Initial review" },
+  ]);
   const contentRef = React.useRef<HTMLTextAreaElement>(null);
 
   React.useEffect(() => {
@@ -197,13 +204,23 @@ function ChapterEditor({ bookId, chapterId }: { bookId: string; chapterId: strin
     mutationFn: () => chaptersApi.update(chapterId, { title, content, create_version: true }),
     onSuccess: () => {
       setDirty(false);
-      toast.success("Chapter saved");
+      toast.success("Chapter autosaved");
       queryClient.invalidateQueries({ queryKey: queryKeys.chapter(chapterId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.chapters(bookId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.versions(chapterId) });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Could not save"),
   });
+
+  // Debounced autosave
+  React.useEffect(() => {
+    if (!dirty || save.isPending) return;
+    const timer = setTimeout(() => {
+      save.mutate();
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [dirty, content, title, save]);
+
 
   const aiAction = useMutation({
     mutationFn: (payload: { action: AIAction; tone?: string }) =>
@@ -359,6 +376,13 @@ function ChapterEditor({ bookId, chapterId }: { bookId: string; chapterId: strin
               </DropdownMenuContent>
             </DropdownMenu>
             <Button
+              variant={showComments ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setShowComments(!showComments)}
+            >
+              <MessageSquare className="size-3.5" /> Comments ({comments.length})
+            </Button>
+            <Button
               variant="outline"
               size="sm"
               disabled={regenerate.isPending}
@@ -366,10 +390,15 @@ function ChapterEditor({ bookId, chapterId }: { bookId: string; chapterId: strin
             >
               <RefreshCw className="size-3.5" /> Regenerate
             </Button>
-            <Button size="sm" disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
-              {dirty ? <Save className="size-3.5" /> : <Check className="size-3.5" />}
-              {save.isPending ? "Saving…" : dirty ? "Save" : "Saved"}
-            </Button>
+            <div className="flex items-center gap-1.5 pl-2">
+              <Button size="sm" disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
+                {dirty ? <Save className="size-3.5" /> : <Check className="size-3.5" />}
+                {save.isPending ? "Saving…" : dirty ? "Save" : "Saved"}
+              </Button>
+              <span className="hidden sm:inline text-[11px] text-muted-foreground">
+                {save.isPending ? "Autosaving…" : dirty ? "Editing" : "Autosaved"}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -381,20 +410,76 @@ function ChapterEditor({ bookId, chapterId }: { bookId: string; chapterId: strin
 
         <Separator />
 
-        <Textarea
-          ref={(el) => {
-            contentRef.current = el;
-            autoResize(el);
-          }}
-          value={content}
-          onChange={(e) => {
-            setContent(e.target.value);
-            setDirty(true);
-            autoResize(e.target);
-          }}
-          placeholder="This chapter hasn't been written yet. Run generation to draft it, or write here."
-          className="min-h-[420px] resize-none font-serif text-[15px] leading-7"
-        />
+        <div className={showComments ? "grid gap-4 lg:grid-cols-3" : ""}>
+          <div className={showComments ? "lg:col-span-2" : ""}>
+            <Textarea
+              ref={(el) => {
+                contentRef.current = el;
+                autoResize(el);
+              }}
+              value={content}
+              onChange={(e) => {
+                setContent(e.target.value);
+                setDirty(true);
+                autoResize(e.target);
+              }}
+              placeholder="This chapter hasn't been written yet. Run generation to draft it, or write here."
+              className="min-h-[420px] resize-none font-serif text-[15px] leading-7"
+            />
+          </div>
+
+          {showComments && (
+            <div className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-4">
+              <div className="flex items-center justify-between border-b pb-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Chapter Comments &amp; Notes
+                </span>
+                <span className="text-xs text-muted-foreground">{comments.length} notes</span>
+              </div>
+              <div className="flex-1 space-y-2.5 overflow-y-auto max-h-[350px]">
+                {comments.map((c) => (
+                  <div key={c.id} className="rounded border bg-background p-2.5 text-xs">
+                    <div className="flex items-center justify-between font-medium">
+                      <span>{c.author}</span>
+                      <span className="text-[10px] text-muted-foreground">{c.time}</span>
+                    </div>
+                    <p className="mt-1 text-muted-foreground">{c.text}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2 pt-2 border-t">
+                <Input
+                  placeholder="Add review note…"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="h-8 text-xs"
+                />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="w-full text-xs"
+                  disabled={!newComment.trim()}
+                  onClick={() => {
+                    if (!newComment.trim()) return;
+                    setComments((prev) => [
+                      ...prev,
+                      {
+                        id: String(Date.now()),
+                        author: "Author",
+                        text: newComment.trim(),
+                        time: "Just now",
+                      },
+                    ]);
+                    setNewComment("");
+                    toast.success("Comment added");
+                  }}
+                >
+                  Post note
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="flex flex-wrap gap-2">
           <Button
@@ -411,5 +496,6 @@ function ChapterEditor({ bookId, chapterId }: { bookId: string; chapterId: strin
         </div>
       </CardContent>
     </Card>
+
   );
 }

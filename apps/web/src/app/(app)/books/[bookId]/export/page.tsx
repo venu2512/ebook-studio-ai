@@ -3,7 +3,8 @@
 import * as React from "react";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, FileText, Loader2, Lock, Trash2 } from "lucide-react";
+import { BookMarked, CheckCircle2, CheckSquare, Download, FileText, Loader2, Lock, ShoppingBag, Square, Trash2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import type { ExportFormat } from "@ebook/shared";
 
@@ -261,6 +262,143 @@ export default function ExportPage() {
           </Card>
         )}
       </div>
+
+      <PublishingChecklists />
     </div>
   );
 }
+
+function PublishingChecklists() {
+  const [kdpItems, setKdpItems] = React.useState<Record<string, boolean>>({
+    epub: true,
+    cover: true,
+    title: false,
+    desc: false,
+    keywords: false,
+    pricing: false,
+  });
+
+  const [gumroadItems, setGumroadItems] = React.useState<Record<string, boolean>>({
+    bundle: true,
+    cover: false,
+    desc: false,
+    pricing: false,
+    email: false,
+  });
+
+  function toggleKdp(key: string) {
+    setKdpItems((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  function toggleGumroad(key: string) {
+    setGumroadItems((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  return (
+    <div className="mt-10">
+      <div className="mb-4">
+        <h2 className="font-serif text-xl font-semibold">Publishing checklists</h2>
+        <p className="text-sm text-muted-foreground">
+          Step-by-step readiness criteria for launching on Amazon KDP and Gumroad.
+        </p>
+      </div>
+
+      <Tabs defaultValue="kdp" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="kdp" className="gap-2">
+            <BookMarked className="size-4" /> Amazon KDP
+          </TabsTrigger>
+          <TabsTrigger value="gumroad" className="gap-2">
+            <ShoppingBag className="size-4" /> Gumroad
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="kdp">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center justify-between">
+                <span>Amazon Kindle Direct Publishing (KDP) Checklist</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  {Object.values(kdpItems).filter(Boolean).length}/6 completed
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[
+                { key: "epub", label: "EPUB Format Validated", desc: "EPUB file generated passes schema structure and table of contents links check." },
+                { key: "cover", label: "Cover Image Prepared", desc: "Recommended 2560 x 1600 px (1.6:1 ratio) high-resolution image in RGB color format." },
+                { key: "title", label: "Metadata Consistency", desc: "Book title and subtitle exactly match interior title page and cover artwork." },
+                { key: "desc", label: "Amazon Blurb & Description", desc: "Copy the HTML-formatted description with bullet points from the Marketing tab." },
+                { key: "keywords", label: "7 Search Keywords & 2 BISAC Categories", desc: "Populate Amazon KDP backend keywords and categories using the generated Marketing kit." },
+                { key: "pricing", label: "Pricing & Rights Configured", desc: "Select 70% royalty tier ($2.99–$9.99) and Worldwide distribution rights." },
+              ].map((item) => (
+                <div
+                  key={item.key}
+                  onClick={() => toggleKdp(item.key)}
+                  className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer hover:bg-accent/50 transition-colors"
+                >
+                  <button type="button" className="mt-0.5 text-primary">
+                    {kdpItems[item.key] ? (
+                      <CheckSquare className="size-4 text-primary" />
+                    ) : (
+                      <Square className="size-4 text-muted-foreground" />
+                    )}
+                  </button>
+                  <div className="flex-1">
+                    <p className={`text-sm font-medium ${kdpItems[item.key] ? "line-through text-muted-foreground" : ""}`}>
+                      {item.label}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="gumroad">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center justify-between">
+                <span>Gumroad & Payhip Independent Sale Checklist</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  {Object.values(gumroadItems).filter(Boolean).length}/5 completed
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[
+                { key: "bundle", label: "Multi-Format Deliverable Bundle", desc: "Export and upload all three files (PDF + EPUB + DOCX) so readers get their preferred format." },
+                { key: "cover", label: "Product Banner & Square Thumbnail", desc: "1280 x 720 px banner cover art and 1:1 square thumbnail configured in Gumroad." },
+                { key: "desc", label: "Sales Copy & Feature Bullets", desc: "Paste persuasive copy, reader promise, and key takeaways from the Marketing kit." },
+                { key: "pricing", label: "Price & 'Pay What You Want'", desc: "Set fixed price (e.g. $9.99) and optionally enable 'Pay what you want' with a minimum price." },
+                { key: "email", label: "Automated Thank-You Email Sequence", desc: "Configure Gumroad post-purchase email workflow using the 5-day email sequence from the Marketing tab." },
+              ].map((item) => (
+                <div
+                  key={item.key}
+                  onClick={() => toggleGumroad(item.key)}
+                  className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer hover:bg-accent/50 transition-colors"
+                >
+                  <button type="button" className="mt-0.5 text-primary">
+                    {gumroadItems[item.key] ? (
+                      <CheckSquare className="size-4 text-primary" />
+                    ) : (
+                      <Square className="size-4 text-muted-foreground" />
+                    )}
+                  </button>
+                  <div className="flex-1">
+                    <p className={`text-sm font-medium ${gumroadItems[item.key] ? "line-through text-muted-foreground" : ""}`}>
+                      {item.label}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+

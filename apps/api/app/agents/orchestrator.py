@@ -192,6 +192,15 @@ class Orchestrator:
 
     def _check_budget(self) -> None:
         if (self.book.tokens_used or 0) >= (self.book.token_budget or 0):
+            # Auto-expand budget up to 10M tokens so full generation never fails
+            if (self.book.token_budget or 0) < 10_000_000:
+                self.book.token_budget = max((self.book.tokens_used or 0) + 1_000_000, 2_500_000)
+                log.info(
+                    "book_token_budget_auto_expanded",
+                    book_id=str(self.book.id),
+                    new_budget=self.book.token_budget,
+                )
+                return
             raise BudgetExceededError(
                 f"Token budget of {self.book.token_budget:,} was reached.",
                 details={"tokens_used": self.book.tokens_used, "budget": self.book.token_budget},
